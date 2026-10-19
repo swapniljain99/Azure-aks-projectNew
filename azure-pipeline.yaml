@@ -1,0 +1,71 @@
+trigger:
+    branches:
+      include:
+        - main  
+    pool: 
+      vmImage: 'ubuntu-latest' 
+    variables:
+      serviceConnection: 'AzureServiceConnection'
+      terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)'
+      backend_RG: 'rg-aks-demo'
+      backesnd_storage_account: 'sttswapnil123456'
+      backend_container_name: 'tfstate'
+      backend_key: 'terraform.tfstate'
+
+    stages:
+      - stage: TerraformPlan
+        displayName: 'Terraform Plan'
+        jobs:
+          - job: TerraformPlan
+            steps:
+              - task: TerrformInstaller@1 
+                inputs:
+                  terraformVersion: 'latest'
+              - task: TerraformTaskV4@4
+                inputs:
+                  provider: 'azurerm'
+                  command: 'init'
+                  workingDirectory: '$(terraformWorkingDirectory)'
+                  backendServiceArm: '$(serviceConnection)'
+                  backendAzureRmResourceGroupName: '$(backend_RG)'
+                  backendAzureRmStorageAccountName: '$(backesnd_storage_account)'
+                  backendAzureRmContainerName: '$(backend_container_name)'
+                  backendAzureRmKey: '$(backend_key)'
+              - task: TerraformTaskV4@4
+                inputs:
+                  provider: 'azurerm'
+                  command: 'Validate'
+                  workingDirectory: '$(terraformWorkingDirectory)'
+              - task: TerraformTaskV4@4
+                inputs:
+                  provider: 'azurerm'
+                  command: 'plan'
+                  workingDirectory: '$(terraformWorkingDirectory)'
+                  environmentServiceNameAzureRM: '$(serviceConnection)'
+       - stage: TerraformApply
+        displayName: 'Terraform Apply'
+        dependsOn: TerraformPlan
+        condition: succeeded()
+        jobs:
+          - job: TerraformApply
+            steps:
+              - task: TerrformInstaller@1 
+                inputs:
+                  terraformVersion: 'latest'
+              - task: TerraformTaskV4@4
+                inputs:
+                  provider: 'azurerm'
+                  command: 'init'
+                  workingDirectory: '$(terraformWorkingDirectory)'
+                  backendServiceArm: '$(serviceConnection)'
+                  backendAzureRmResourceGroupName: '$(backend_RG)'
+                  backendAzureRmStorageAccountName: '$(backesnd_storage_account)'
+                  backendAzureRmContainerName: '$(backend_container_name)'
+                  backendAzureRmKey: '$(backend_key)'
+              - task: TerraformTaskV4@4
+                inputs:
+                  provider: 'azurerm'
+                  command: 'apply'
+                  workingDirectory: '$(terraformWorkingDirectory)'
+                  commandOptions: '-auto-approve'
+                  environmentServiceNameAzureRM: '$(serviceConnection)'
