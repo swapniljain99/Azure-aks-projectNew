@@ -7,7 +7,7 @@ variable "subscription_id" {
 variable "location" {
   description = "Azure region in which to create the resource group and network resources."
   type        = string
-  default     = "West Europe"
+  default     = "East US"
 }
 
 variable "resource_group_name" {
